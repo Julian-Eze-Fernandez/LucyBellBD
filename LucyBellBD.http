@@ -1,0 +1,6 @@
+@LucyBellBD_HostAddress = http://localhost:5081
+
+GET {{LucyBellBD_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
