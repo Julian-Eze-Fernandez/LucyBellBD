@@ -42,7 +42,6 @@ namespace LucyBellBD
                     });
             });
 
-
             services.AddAutoMapper(typeof(StartUp));
         }
 
