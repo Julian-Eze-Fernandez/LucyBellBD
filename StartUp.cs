@@ -29,6 +29,19 @@ namespace LucyBellBD
             services.AddIdentity<IdentityUser, IdentityRole>()  
                 .AddEntityFrameworkStores<ApplicationDbContext>()   
                 .AddDefaultTokenProviders();
+
+            // Agregar servicios de CORS 
+            services.AddCors(options =>
+            {
+                options.AddPolicy("NuevaPolitica",
+                    app =>
+                    {
+                        app.WithOrigins("http://localhost:4200") // replace with your frontend and backend ports
+                               .AllowAnyHeader()
+                               .AllowAnyMethod();
+                    });
+            });
+
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -44,6 +57,8 @@ namespace LucyBellBD
             app.UseRouting();
 
             app.UseAuthorization();
+
+            app.UseCors("NuevaPolitica");
 
             app.UseEndpoints(endpoint =>
             {
