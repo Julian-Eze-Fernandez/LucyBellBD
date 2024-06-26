@@ -42,10 +42,13 @@ namespace LucyBellBD
                     });
             });
 
+
+            services.AddAutoMapper(typeof(StartUp));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            //Uso de swagger en desarrollo
             if (env.IsDevelopment())
             {
                 app.UseSwagger();

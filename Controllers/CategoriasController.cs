@@ -1,4 +1,6 @@
-﻿using LucyBellBD.Entidades;
+﻿using AutoMapper;
+using LucyBellBD.DTOs;
+using LucyBellBD.Entidades;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,20 +11,23 @@ namespace LucyBellBD.Controllers
 	public class CategoriasController : ControllerBase
 	{
 		private readonly ApplicationDbContext context;
+		private readonly IMapper mapper;
 
-		public CategoriasController(ApplicationDbContext context)
+		public CategoriasController(ApplicationDbContext context, IMapper mapper)
 		{
 			this.context = context;
+			this.mapper = mapper;
 		}
 
 		[HttpGet]
-		public async Task<ActionResult<List<Categoria>>> Get()
+		public async Task<ActionResult<List<CategoriaDTO>>> Get()
 		{
-			return await context.Categorias.Include(x => x.SubCategorias).ToListAsync();
+			var categorias = await context.Categorias.ToListAsync();
+			return mapper.Map<List<CategoriaDTO>>(categorias);
 		}
-
+		
 		[HttpGet("{id:int}")]
-		public async Task<ActionResult<Categoria>> Get(int id)
+		public async Task<ActionResult<CategoriaDTO>> Get(int id)
 		{
 			var categoria = await context.Categorias.FirstOrDefaultAsync(x => x.Id == id);
 
@@ -31,18 +36,20 @@ namespace LucyBellBD.Controllers
 				return NotFound();
 			}
 
-			return categoria;
+			return mapper.Map<CategoriaDTO>(categoria);
 		}
 
 		[HttpPost]
-		public async Task<ActionResult> Post(Categoria categoria)
+		public async Task<ActionResult> Post(CategoriaCreacionDTO categoriaCreacionDTO)
 		{
-			var existeCategoriaConElMismoNombre = await context.Categorias.AnyAsync(x => x.Nombre == categoria.Nombre);
+			var existeCategoriaConElMismoNombre = await context.Categorias.AnyAsync(x => x.Nombre == categoriaCreacionDTO.Nombre);
 
 			if (existeCategoriaConElMismoNombre)
 			{
-				return BadRequest($"Ya existe una categoria con el nombre {categoria.Nombre}");
+				return BadRequest($"Ya existe una categoria con el nombre {categoriaCreacionDTO.Nombre}");
 			}
+
+			var categoria = mapper.Map<Categoria>(categoriaCreacionDTO);
 
 			context.Add(categoria);
 			await context.SaveChangesAsync();

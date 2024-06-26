@@ -1,4 +1,6 @@
-﻿using LucyBellBD.Entidades;
+﻿using AutoMapper;
+using LucyBellBD.DTOs;
+using LucyBellBD.Entidades;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,27 +11,32 @@ namespace LucyBellBD.Controllers
 	public class SubCategoriasController : ControllerBase
 	{
 		private readonly ApplicationDbContext context;
+		private readonly IMapper mapper;
 
-		public SubCategoriasController(ApplicationDbContext context)
+		public SubCategoriasController(ApplicationDbContext context, IMapper mapper)
         {
 			this.context = context;
+			this.mapper = mapper;
 		}
 
 		[HttpGet("(id:int)")]
-		public async Task<ActionResult<SubCategoria>> Get(int id)
+		public async Task<ActionResult<SubCategoriaDTO>> Get(int id)
 		{
-			return await context.SubCategorias.Include(x => x.Categoria).FirstOrDefaultAsync(x => x.Id == id);
+			var subcategoria = await context.SubCategorias.FirstOrDefaultAsync(x => x.Id == id);
+			return mapper.Map<SubCategoriaDTO>(subcategoria);
 		}
 
 		[HttpPost]
-		public async Task<ActionResult> Post(SubCategoria subCategoria)
+		public async Task<ActionResult> Post(SubCategoriaCreacionDTO subCategoriaCreacionDTO)
 		{
-			var existeCategoria = await context.Categorias.AnyAsync(x => x.Id == subCategoria.CategoriaId);
+			//var existeCategoria = await context.Categorias.AnyAsync(x => x.Id == subCategoriaCreacionDTO.CategoriaId);
 
-			if (!existeCategoria) 
-			{
-				return BadRequest($"No existe la Categoria de Id: {subCategoria.CategoriaId}");
-			}
+			//if (!existeCategoria) 
+			//{
+			//	return BadRequest($"No existe la Categoria de Id: {subCategoriaCreacionDTO.CategoriaId}");
+			//}
+
+			var subCategoria = mapper.Map<Categoria>(subCategoriaCreacionDTO);
 
 			context.Add(subCategoria);
 			await context.SaveChangesAsync();
