@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using LucyBellBD.DTOs;
+using LucyBellBD.DTOs.CategoriaDTO;
+using LucyBellBD.DTOs.SubCategoriasDTOs;
 using LucyBellBD.Entidades;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +10,7 @@ namespace LucyBellBD.Controllers
 {
 	[ApiController]
 	[Route("api/categorias")]
-	public class CategoriasController : ControllerBase
+	public class CategoriasController: ControllerBase
 	{
 		private readonly ApplicationDbContext context;
 		private readonly IMapper mapper;
@@ -20,16 +22,32 @@ namespace LucyBellBD.Controllers
 		}
 
 		[HttpGet]
-		public async Task<ActionResult<List<CategoriaDTO>>> Get()
+		public async Task<ActionResult<List<CategoriaDTO>>> GetCategoriasLista()
 		{
 			var categorias = await context.Categorias.ToListAsync();
 			return mapper.Map<List<CategoriaDTO>>(categorias);
 		}
 		
 		[HttpGet("{id:int}")]
-		public async Task<ActionResult<CategoriaDTO>> Get(int id)
+		public async Task<ActionResult<CategoriaDTO>> GetCategoriaId(int id)
 		{
-			var categoria = await context.Categorias.FirstOrDefaultAsync(x => x.Id == id);
+			var categoria = await context.Categorias
+				.Include(categoriaBD => categoriaBD.SubCategorias).FirstOrDefaultAsync(x => x.Id == id); //Incluye la lista de subcategorias
+
+			if (categoria == null)
+			{
+				return NotFound();
+			}
+
+			return mapper.Map<CategoriaDTO>(categoria);
+		}
+		
+		[HttpGet("/api/categorias/{id:int}/productos")] //Get que muestra que productos estan en x categoria
+		public async Task<ActionResult<CategoriaDTO>> GetCategoriaIdConProductos(int id)
+		{
+			var categoria = await context.Categorias
+				.Include(categoriaBD => categoriaBD.Productos)
+				.FirstOrDefaultAsync(x => x.Id == id); //Incluye la lista de productos
 
 			if (categoria == null)
 			{
@@ -40,7 +58,7 @@ namespace LucyBellBD.Controllers
 		}
 
 		[HttpPost]
-		public async Task<ActionResult> Post(CategoriaCreacionDTO categoriaCreacionDTO)
+		public async Task<ActionResult> PostCategoria(CategoriaCreacionDTO categoriaCreacionDTO)
 		{
 			var existeCategoriaConElMismoNombre = await context.Categorias.AnyAsync(x => x.Nombre == categoriaCreacionDTO.Nombre);
 
@@ -57,13 +75,8 @@ namespace LucyBellBD.Controllers
 		}
 
 		[HttpPut("(id:int)")]
-		public async Task<ActionResult> Put(Categoria categoria, int id)
+		public async Task<ActionResult> PutCategoria(CategoriaCreacionDTO categoriaCreacionDTO, int id)
 		{
-			if (categoria.Id != id)
-			{
-				return BadRequest("El id de la categoria no coincide con el id del URL");
-			}
-
 			var existe = await context.Categorias.AnyAsync(x => x.Id == id);
 
 			if (!existe)
@@ -71,13 +84,16 @@ namespace LucyBellBD.Controllers
 				return NotFound();
 			}
 
+			var categoria = mapper.Map<Categoria>(categoriaCreacionDTO);
+			categoria.Id = id;
+
 			context.Update(categoria);
 			await context.SaveChangesAsync();
-			return Ok();
+			return NoContent();
 		}
 
 		[HttpDelete("(id:int)")]
-		public async Task<ActionResult> Delete(int id)
+		public async Task<ActionResult> DeleteCategoria(int id)
 		{
 			var existe = await context.Categorias.AnyAsync(x => x.Id == id);
 
@@ -88,7 +104,7 @@ namespace LucyBellBD.Controllers
 
 			context.Remove(new Categoria() { Id = id });
 			await context.SaveChangesAsync();
-			return Ok();
+			return NoContent();
 		}
 	}
 }

@@ -12,7 +12,7 @@ namespace LucyBellBD.Entidades
 		public string Nombre { get; set; }
         public int CategoriaId { get; set; }
         public Categoria Categoria { get; set; }
-        public List<Producto> Porductos { get; set; }
+        public List<Producto> Productos { get; set; }
 
     }
 }

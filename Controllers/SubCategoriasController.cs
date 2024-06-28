@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using LucyBellBD.DTOs;
+using LucyBellBD.DTOs.CategoriaDTO;
+using LucyBellBD.DTOs.SubCategoriasDTOs;
 using LucyBellBD.Entidades;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,8 +9,8 @@ using Microsoft.EntityFrameworkCore;
 namespace LucyBellBD.Controllers
 {
 	[ApiController]
-	[Route ("api/subCategorias")]
-	public class SubCategoriasController : ControllerBase
+	[Route("api/categorias/{categoriaId:int}/subCategorias")]
+	public class SubCategoriasController: ControllerBase
 	{
 		private readonly ApplicationDbContext context;
 		private readonly IMapper mapper;
@@ -19,28 +21,100 @@ namespace LucyBellBD.Controllers
 			this.mapper = mapper;
 		}
 
-		[HttpGet("(id:int)")]
-		public async Task<ActionResult<SubCategoriaDTO>> Get(int id)
+		[HttpGet("/subcategorias/lista")]
+		public async Task<ActionResult<List<SubCategoriaDTO>>> GetSubCategoriasLista()
 		{
-			var subcategoria = await context.SubCategorias.FirstOrDefaultAsync(x => x.Id == id);
-			return mapper.Map<SubCategoriaDTO>(subcategoria);
+			var subCategorias = await context.SubCategorias.ToListAsync();
+			return mapper.Map<List<SubCategoriaDTO>>(subCategorias);
+		}
+
+		[HttpGet]
+		public async Task<ActionResult<List<SubCategoriaDTO>>> GetSubCategoriaPorCategoria(int categoriaId)
+		{
+			var existeCategoria = await context.Categorias.AnyAsync(categoriaDB => categoriaDB.Id == categoriaId);
+
+			if (!existeCategoria)
+			{
+				return NotFound();
+			}
+
+			var subCategorias = await context.SubCategorias
+				.Where(subCategoriaDB => subCategoriaDB.CategoriaId == categoriaId).ToListAsync();
+
+			return mapper.Map<List<SubCategoriaDTO>>(subCategorias);
+		}
+
+		[HttpGet("/api/subcategoria/{id:int}/productos")] //Get que muestra que productos estan en x subcategoria
+		public async Task<ActionResult<SubCategoriaDTO>> GetSubCategoriaId(int id)
+		{
+			var subCategoria = await context.SubCategorias
+				.Include(subCategoriaBD => subCategoriaBD.Productos)
+				.FirstOrDefaultAsync(x => x.Id == id); //Incluye la lista de productos
+
+			if (subCategoria == null)
+			{
+				return NotFound();
+			}
+
+			return mapper.Map<SubCategoriaDTO>(subCategoria);
 		}
 
 		[HttpPost]
-		public async Task<ActionResult> Post(SubCategoriaCreacionDTO subCategoriaCreacionDTO)
+		public async Task<ActionResult> PostSubCategoria(int categoriaId ,SubCategoriaCreacionDTO subCategoriaCreacionDTO)
 		{
-			//var existeCategoria = await context.Categorias.AnyAsync(x => x.Id == subCategoriaCreacionDTO.CategoriaId);
+			var existeCategoria = await context.Categorias.AnyAsync(categoriaDB => categoriaDB.Id == categoriaId);
 
-			//if (!existeCategoria) 
-			//{
-			//	return BadRequest($"No existe la Categoria de Id: {subCategoriaCreacionDTO.CategoriaId}");
-			//}
+			if (!existeCategoria)
+			{
+				return NotFound();
+			}
 
-			var subCategoria = mapper.Map<Categoria>(subCategoriaCreacionDTO);
-
+			var subCategoria = mapper.Map<SubCategoria>(subCategoriaCreacionDTO);
+			subCategoria.CategoriaId = categoriaId;
 			context.Add(subCategoria);
 			await context.SaveChangesAsync();
 			return Ok();
+		}
+
+		[HttpPut]
+		public async Task<ActionResult> PutSubCategoria(int categoriaId, int id ,SubCategoriaCreacionDTO subCategoriaCreacionDTO)
+		{
+			var existeCategoria = await context.Categorias.AnyAsync(categoriaDB => categoriaDB.Id == categoriaId);
+
+			if (!existeCategoria)
+			{
+				return NotFound();
+			}
+
+			var existeSubCategoria = await context.SubCategorias.AnyAsync(subCategoriaDB => subCategoriaDB.Id == id);
+
+			if (!existeSubCategoria)
+			{
+				return NotFound();
+			}
+
+			var subCategoria = mapper.Map<SubCategoria>(subCategoriaCreacionDTO);
+			subCategoria.Id = id;
+			subCategoria.CategoriaId = categoriaId;
+
+			context.Update(subCategoria);
+			await context.SaveChangesAsync();
+			return NoContent();
+		}
+
+		[HttpDelete("(id:int)")]
+		public async Task<ActionResult> DeleteSubCategoria(int id)
+		{
+			var existeSubCategoria = await context.SubCategorias.AnyAsync(x => x.Id == id);
+
+			if (!existeSubCategoria)
+			{
+				return NotFound();
+			}
+
+			context.Remove(new SubCategoria() { Id = id });
+			await context.SaveChangesAsync();
+			return NoContent();
 		}
 	}
 }
